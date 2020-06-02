@@ -1,4 +1,4 @@
--- F/A-18 Module created by AndrewW for DCS Beta 2.5.6 modified by WarLord, DeadMeat v1.3
+-- F/A-18 Module created by AndrewW for DCS Beta 2.5.6 modified by WarLord, DeadMeat v1.3a
 -- Many thanks to Capt Zeen for the pointers on analog outputs and UFC/IFEI export
 -- And of course huge thanks to [FSF]Ian for writing DCS-BIOS in the first place
 -- Added new functions by Capt Zeen to get radios frecuencies and channels
@@ -71,14 +71,15 @@ local function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	end
 	return ret
 end
-
+--------------------------
 local function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
-	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
+	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
 		if dev0:get_argument_value(arg_number) < 0.5 then
 			alloc:setValue(0)
-		else
-			alloc:setValue(1)
+		elseif dev0:get_argument_value(arg_number) > 0.8 then
+			alloc:setValue(2)			
+		else alloc:setValue(1)
 		end
 	end
 	
@@ -88,7 +89,7 @@ local function defineEmergencyParkingBrake(msg, device_id, emergency_command, pa
 		description = description,
 		control_type = "emergency_parking_brake",
 		inputs = {
-			{ interface = "set_state", max_value = 1, description = "set the switch position -- 0 = emergency, 1 = parking" }
+			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = emergency, 1 = parking, 2 = release" }
 		},
 		outputs = {
 			{ ["type"] = "integer",
@@ -96,27 +97,33 @@ local function defineEmergencyParkingBrake(msg, device_id, emergency_command, pa
 			  address = alloc.address,
 			  mask = alloc.mask,
 			  shift_by = alloc.shiftBy,
-			  max_value = 1,
-			  description = "switch position -- 0 = emergency, 1 = parking"
+			  max_value = 2,
+			  description = "switch position -- 0 = emergency, 1 = parking, 2 = release"
 			}
 		}
 	}
-	moduleBeingDefined.inputProcessors[msg] = function(toState)
+		moduleBeingDefined.inputProcessors[msg] = function(toState)
 		local dev = GetDevice(device_id)
 		local fromState = GetDevice(0):get_argument_value(arg_number)
-		if fromState > 0.5 then fromState = 1 end
-		if fromState == 0 and toState == "1" then
-			dev:performClickableAction(park_command, 0) 
-			dev:performClickableAction(park_command, 1) 
-			dev:performClickableAction(park_command, 0) 
-		elseif fromState == 1 and toState == "0" then
+				if fromState > 0.5 and fromState < 0.8 then fromState = 1 end
+		 if fromState == 1 and toState == "0" then --Emerg
 			dev:performClickableAction(emergency_command, 0) 
 			dev:performClickableAction(emergency_command, 1) 
-			dev:performClickableAction(emergency_command, 0) 
+			dev:performClickableAction(emergency_command, 0)			 
+	     elseif fromState == 0 and toState == "1" then --Park
+			dev:performClickableAction(park_command, 0) 		 
+			dev:performClickableAction(park_command, 1)
+			dev:performClickableAction(park_command, 0) 			
+		 elseif fromState == 1 and toState == "2" then --Unset Park 
+			dev:performClickableAction(park_command, 1)
+			dev:performClickableAction(park_command, 0)				
 		end
 	end
 end
-
+--down = gear_commands.EmergParkHandleSelectPark, up = gear_commands.EmergParkHandleSelectPark,	value_down =  1.0,	value_up = 0.0,	name = _('Emergency/Parking Brake Handle - CCW'),			
+--down = gear_commands.EmergParkHandleSelectEmerg,												value_down = -1.0,					name = _('Emergency/Parking Brake Handle - CW'),
+--defineEmergencyParkingBrake("EMERGENCY_PARKING_BRAKE_ROTATE", 5, 3007, 3006, 241, "Emergency and Parking Brake Handle", "Emergency/Parking Brake Rotate")					
+--------------------------
 local function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
@@ -177,7 +184,7 @@ local function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_
 		description = description,
 		control_type = "mission_computer_switch",
 		inputs = {
-			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = emergency, 1 = parking" }
+			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = 1OFF, 1 = NORM, 2 = 2OFF" }
 		},
 		outputs = {
 			{ ["type"] = "integer",
@@ -186,7 +193,7 @@ local function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_
 			  mask = alloc.mask,
 			  shift_by = alloc.shiftBy,
 			  max_value = 2,
-			  description = "switch position -- 0 = emergency, 1 = parking"
+			  description = "switch position -- 0 = 1OFF, 1 = NORM, 2 = 2OFF"
 			}
 		}
 	}
@@ -1153,9 +1160,8 @@ defineToggleSwitch("LIGHTS_TEST_SW", 9, 3007, 416, "Interior Lights Panel", "Lig
 
 -- 5. Sensor Panel
 define3PosTumb("FLIR_SW", 62, 3001, 439, "Sensor Panel", "FLIR Switch, ON/STBY/OFF")
-define3PosTumb("LTD_R_SW", 62, 3002, 441, "Sensor Panel", "LTD/R Switch, ---/SAFE/AFT") -- ARM position is handled by another parameter
-defineToggleSwitch("LST_NFLR_SW", 62, 3004, 442, "Sensor Panel", "LST/NFLR Switch, ON/OFF")
-defineToggleSwitch("LTD_R_ARM", 62, 3003, 441, "Sensor Panel", "LTD/R Switch, ARM/SAFE")
+defineToggleSwitch("LTD_R_SW", 62, 3002, 441, "Sensor Panel", "LTD/R Switch, ARM/SAFE") 
+defineToggleSwitch("LST_NFLR_SW", 62, 3003, 442, "Sensor Panel", "LST/NFLR Switch, ON/OFF")
 defineTumb("RADAR_SW", 42, 3001, 440, 0.1, {0.0, 0.3}, nil, false, "Sensor Panel", "RADAR Switch Change ,OFF/STBY/OPR/EMERG(PULL)")
 definePushButton("RADAR_SW_PULL", 42, 3002, 440, "Sensor Panel", "RADAR Switch Pull (MW to pull), OFF/STBY/OPR/EMERG(PULL)")
 defineTumb("INS_SW", 44, 3001, 443, 0.1, {0.0, 0.7}, nil, false, "Sensor Panel", "INS Switch, OFF/CV/GND/NAV/IFA/GYRO/GB/TEST")
@@ -1250,5 +1256,18 @@ end, 65535, "External Aircraft Model", "Formation Lights")
 defineIntegerFromGetter("EXT_STROBE_LIGHTS", function()
 	if LoGetAircraftDrawArgumentValue(193) > 0 then return 1 else return 0 end
 end, 1, "External Aircraft Model", "Strobe Lights")
+
+defineIntegerFromGetter("EXT_WOW_NOSE", function()
+	if LoGetAircraftDrawArgumentValue(1) > 0 then return 1 else return 0 end
+end, 1, "External Aircraft Model", "Weight ON Wheels Nose Gear")
+
+defineIntegerFromGetter("EXT_WOW_RIGHT", function()
+	if LoGetAircraftDrawArgumentValue(4) > 0 then return 1 else return 0 end
+end, 1, "External Aircraft Model", "Weight ON Wheels Right Gear")
+
+defineIntegerFromGetter("EXT_WOW_LEFT", function()
+	if LoGetAircraftDrawArgumentValue(6) > 0 then return 1 else return 0 end
+end, 1, "External Aircraft Model", "Weight ON Wheels Left Gear")
+
 
 BIOS.protocol.endModule()
