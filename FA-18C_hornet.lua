@@ -1,4 +1,4 @@
--- F/A-18 Module created by AndrewW v1.2 for DCS Beta 2.5.5 modified by WarLord, DeadMeat
+-- F/A-18 Module created by AndrewW for DCS Beta 2.5.6 modified by WarLord, DeadMeat v1.3
 -- Many thanks to Capt Zeen for the pointers on analog outputs and UFC/IFEI export
 -- And of course huge thanks to [FSF]Ian for writing DCS-BIOS in the first place
 -- Added new functions by Capt Zeen to get radios frecuencies and channels
@@ -14,25 +14,24 @@ local document = BIOS.util.document
 local parse_indication = BIOS.util.parse_indication
 
 local defineIndicatorLight = BIOS.util.defineIndicatorLight
+local defineIndicatorLightInverted = BIOS.util.defineIndicatorLightInverted
 local definePushButton = BIOS.util.definePushButton
 local definePotentiometer = BIOS.util.definePotentiometer
 local defineRotary = BIOS.util.defineRotary
-local defineSetCommandTumb = BIOS.util.defineSetCommandTumb
 local defineTumb = BIOS.util.defineTumb
 local define3PosTumb = BIOS.util.define3PosTumb
 local defineToggleSwitch = BIOS.util.defineToggleSwitch
 local defineToggleSwitchToggleOnly = BIOS.util.defineToggleSwitchToggleOnly
-local defineFixedStepTumb = BIOS.util.defineFixedStepTumb
-local defineVariableStepTumb = BIOS.util.defineVariableStepTumb
 local defineString = BIOS.util.defineString
 local defineRockerSwitch = BIOS.util.defineRockerSwitch
 local defineMultipositionSwitch = BIOS.util.defineMultipositionSwitch
-local defineElectricallyHeldSwitch = BIOS.util.defineElectricallyHeldSwitch
 local defineFloat = BIOS.util.defineFloat
 local define8BitFloat = BIOS.util.define8BitFloat
 local defineIntegerFromGetter = BIOS.util.defineIntegerFromGetter
 
-function ValueConvert(actual_value, input, output)
+-- remove Arg# Pilot 540
+
+local function ValueConvert(actual_value, input, output)
 local range=1
 local real_value=0
 local slope = {}
@@ -52,7 +51,7 @@ local slope = {}
 	return final_value
 end
 
-function coerce_nil_to_string(value)
+local function coerce_nil_to_string(value)
 	if value == nil then
 		return ""
 	else
@@ -60,7 +59,7 @@ function coerce_nil_to_string(value)
 	end
 end
 
-function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
+local function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	local ret = {}
 	local li = list_indication(indicator_id)
 	if li == "" then return nil end
@@ -73,7 +72,7 @@ function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	return ret
 end
 
-function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
+local function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
 		if dev0:get_argument_value(arg_number) < 0.5 then
@@ -118,7 +117,7 @@ function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_com
 	end
 end
 
-function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
+local function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
 		if dev0:get_argument_value(arg_number) < 0.5 then
@@ -159,7 +158,7 @@ function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, cate
 	end
 end
 
-function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_off_command, arg_number, category, description)
+local function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_off_command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
 	    local val = dev0:get_argument_value(arg_number)
@@ -203,7 +202,7 @@ function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_off_co
 	end
 end
 
-function defineEjectionHandleSwitch(msg, device_id, command, arg_number, category, description)
+local function defineEjectionHandleSwitch(msg, device_id, command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
 		if dev0:get_argument_value(arg_number) < 0.5 then
@@ -244,7 +243,7 @@ function defineEjectionHandleSwitch(msg, device_id, command, arg_number, categor
 end
 
 
-function defineFloatWithValueConversion(msg, arg_number, limits, input_range, output_range, category, description)
+local function defineFloatWithValueConversion(msg, arg_number, limits, input_range, output_range, category, description)
 	local intervalLength = limits[2] - limits[1]
 	local alloc = moduleBeingDefined.memoryMap:allocateInt { maxValue = 65535 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
@@ -272,7 +271,7 @@ end
 
 
 -- functions by Capt Zeen
-function defineFrequency(msg, id_device_number, category, description)
+local function defineFrequency(msg, id_device_number, category, description)
 	
 	local alloc = moduleBeingDefined.memoryMap:allocateInt { maxValue = 65535 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(freq)
@@ -299,7 +298,7 @@ function defineFrequency(msg, id_device_number, category, description)
 end
 
 
-function defineFloatFromUFCChannel(msg, _channel, category, description)
+local function defineFloatFromUFCChannel(msg, _channel, category, description)
 	
 	
 		 
@@ -375,19 +374,13 @@ function defineFloatFromUFCChannel(msg, _channel, category, description)
 	}
 
 end
-
-
 -- end of functions adeed by Capt Zeen
-
 
 -- radio freqs: by Capt Zeen
 defineFrequency("COMM1_FREQ", 38, "Comms frequency", "COMM1 FREQ")
 defineFrequency("COMM2_FREQ", 39, "Comms frequency", "COMM2 FREQ")
 defineFloatFromUFCChannel("COMM1_CHANNEL_NUMERIC", 1, "Comms frequency", "Comm 1 Channel as number")   
 defineFloatFromUFCChannel("COMM2_CHANNEL_NUMERIC", 2, "Comms frequency", "Comm 2 Channel as number")   
-
-
-
 
 -- INSTRUMENT PANEL
 
@@ -864,7 +857,7 @@ defineString("IFEI_Z_TEXTURE", function() return ZTexture end, 1, "Integrated Fu
 definePotentiometer("IFEI", 33, 3007, 174, {0, 1}, "HUD Video Record Panel", "Brightness Control Knob")
 define3PosTumb("SELECT_HMD_LDDI_RDDI", 0, 3104, 175, "HUD Video Record Panel", "Selector Switch, HMD/LDDI/RDDI") -- From TODO, will change
 define3PosTumb("SELECT_HUD_LDDI_RDDI", 0, 3105, 176, "HUD Video Record Panel", "Selector Switch, HUD/LDIR/RDDI") -- From TODO, will change
-define3PosTumb("MODE_SELECTOR_SW", 0, 3106, 176, "HUD Video Record Panel", "Mode Selector Switch, MAN/OFF/AUTO") -- From TODO, will change
+define3PosTumb("MODE_SELECTOR_SW", 0, 3106, 314, "HUD Video Record Panel", "Mode Selector Switch, MAN/OFF/AUTO") -- From TODO, will change
 
 -- 24. AMPCD
 definePotentiometer("AMPCD_BRT_CTL", 37, 3001, 203, {0, 1}, "AMPCD", "Brightness Control Knob")
@@ -894,15 +887,15 @@ definePushButton("AMPCD_PB_19", 37, 3029, 201, "AMPCD", "Pushbutton 19")
 definePushButton("AMPCD_PB_20", 37, 3030, 202, "AMPCD", "Pushbutton 20")
 
 -- 25. Standby Attitude Reference Indicator
-definePushButton("SAI_TEST_BTN", 32, 3001, 215, "Standby Attitude Reference Indicator", "Test Button")
-definePushButton("SAI_CAGE", 32, 3002, 213, "Standby Attitude Reference Indicator", "Pull to uncage")
-defineRotary("SAI_SET", 32, 3003, 214, "Standby Attitude Reference Indicator", "Adjust Attitude")
-defineFloat("SAI_PITCH", 205, {0, 1}, "Standby Attitude Reference Indicator", "Pitch")
-defineFloat("SAI_BANK", 206, {0, 1}, "Standby Attitude Reference Indicator", "Bank")
-defineFloat("SAI_ATT_WARNING_FLAG", 209, {0, 1}, "Standby Attitude Reference Indicator", "Attitude Warning Flag")
-defineFloat("SAI_MAN_PITCH_ADJ", 210, {0, 1}, "Standby Attitude Reference Indicator", "Manual Pitch Adjustment")
-defineFloat("SAI_SLIP_BALL", 207, {0, 1}, "Standby Attitude Reference Indicator", "Slip Ball")
-defineFloat("SAI_RATE_OF_TURN", 208, {0, 1}, "Standby Attitude Reference Indicator", "Rate Of Turn")
+definePushButton("SAI_TEST_BTN", 32, 3001, 215, "Standby Attitude Reference Indicator", "SAI Test Button")
+definePushButton("SAI_CAGE", 32, 3002, 213, "Standby Attitude Reference Indicator", "SAI Pull to uncage")
+defineRotary("SAI_SET", 32, 3003, 214, "Standby Attitude Reference Indicator", "SAI Adjust Attitude")
+defineFloat("SAI_PITCH", 205, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Pitch")
+defineFloat("SAI_BANK", 206, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Bank")
+defineFloat("SAI_ATT_WARNING_FLAG", 209, {0, 1}, "Standby Attitude Reference Indicator", "SAI Attitude Warning Flag")
+defineFloat("SAI_MAN_PITCH_ADJ", 210, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Manual Pitch Adjustment")
+defineFloat("SAI_SLIP_BALL", 207, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Slip Ball")
+defineFloat("SAI_RATE_OF_TURN", 208, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Rate Of Turn")
 
 -- 26. Azimuth Indicator
 
@@ -1138,7 +1131,7 @@ defineFloat("VOLT_U", 400, {0, 1}, "Electrical Power Panel", "Battery U Volts")
 defineFloat("VOLT_E", 401, {0, 1}, "Electrical Power Panel", "Battery E Volts")
 
 -- 2. Environment Control System Panel
-defineTumb("BLEED_AIR_KNOB", 11, 3001, 411, 0.1, {0.0, 0.3}, nil, false, "Environment Control System Panel", "Bleed Air Knob, R OFF/NORM/L OFF/OFF")
+defineTumb("BLEED_AIR_KNOB", 11, 3001, 411, 0.1, {0.0, 0.3}, nil, true, "Environment Control System Panel", "Bleed Air Knob, R OFF/NORM/L OFF/OFF")
 defineToggleSwitch("BLEED_AIR_PULL", 11, 3002, 412, "Environment Control System Panel", "Bleed Air Knob, AUG PULL")
 define3PosTumb("ECS_MODE_SW", 11, 3003, 405, "Environment Control System Panel", "ECS Mode Switch, AUTO/MAN/ OFF/RAM")
 define3PosTumb("CABIN_PRESS_SW", 11, 3004, 408, "Environment Control System Panel", "Cabin Pressure Switch, NORM/DUMP/ RAM/DUMP")
@@ -1182,7 +1175,7 @@ defineTumb("KY58_POWER_SELECT", 41, 3004, 447, 0.1, {0.0, 0.2}, nil, false, "KY-
 -- 10. Utility Light
 
 -- 11. Defog Panel
-definePotentiometer("DEFOG_HANDLE", 11, 3005, 451, {0, 1}, "Defog Panel", "Defog Handle")
+definePotentiometer("DEFOG_HANDLE", 11, 3005, 451, {-1, 1}, "Defog Panel", "Defog Handle")
 define3PosTumb("WSHIELD_ANTI_ICE_SW", 11, 3009, 452, "Defog Panel", "Windshield Anti-Ice/Rain Switch, ANTI ICE/OFF/RAIN")
 
 -- 12. Internal Canopy Switch
@@ -1216,6 +1209,27 @@ defineToggleSwitch("HIDE_STICK_TOGGLE", 7, 3013, 575, "Ejection Seat", "Hide Sti
 -- 2. TODO
 definePushButton("LEFT_VIDEO_BIT", 0, 3127, 315, "TODO", "Left Video Sensor BIT Initiate Pushbutton - Push to initiate BIT")
 definePushButton("RIGHT_VIDEO_BIT", 0, 3128, 318, "TODO", "Right Video Sensor BIT Initiate Pushbutton - Push to initiate BIT")
+definePotentiometer("RWR_AUDIO_CTRL", 0, 3130, 262, {0, 1}, "RWR Control Indicator", "ALR-67 AUDIO Control Knob")
+defineToggleSwitch("NUC_WPN_SW", 0, 3100, 507, "TODO", "NUC WPN Switch, ENABLE/DISABLE (no function)")
+defineTumb("THROTTLE_EXT_L_SW", 13, 3041, 494, 2, {-1, 1}, nil, false, "Throttle Quadrant", "Throttle Exterior Lights Switch, ON/OFF")
+
+defineIndicatorLight("CONSOLE_INT_LT", 460, "Internal Lights", "Console Lightning (light green)")
+defineIndicatorLight("FLOOD_INT_LT", 461, "Internal Lights", "Flood Lightning (light green)")
+defineIndicatorLight("NVG_FLOOD_INT_LT", 462, "Internal Lights", "Nvg Flood Lightning (light green)")
+defineIndicatorLight("CHART_INT_LT", 463, "Internal Lights", "Chart Lightning (light green)")
+defineIndicatorLight("EMERG_INSTR_INT_LT", 464, "Internal Lights", "Emergency Instrument Lightning (light green)")
+defineIndicatorLight("ENG_INSTR_INT_LT", 465, "Internal Lights", "Eng Instrument Flood Lightning (light green)")
+defineIndicatorLight("INSTR_INT_LT", 466, "Internal Lights", "Instrument Lightning (light green)")
+defineIndicatorLight("STBY_COMPASS_INT_LT", 467, "Internal Lights", "Stby Compass Lightning (light green)")
+defineIndicatorLight("IFEI_DISP_INT_LT", 468, "Internal Lights", "IFEI Display Lightning (light green)")
+defineIndicatorLight("IFEI_BTN_INT_LT", 469, "Internal Lights", "IFEI Buttons Lightning (light green)")
+defineIndicatorLight("CMSD_JET_SEL_L", 516, "Dispenser/EMC Panel", "ECM JETT JETT SEL Button Light (green)")
+defineIndicatorLight("RWR_LT_BRIGHT", 520, "RWR Control Indicator", "RWR Lights Brightness")
+
+defineFloat("SAI_POINTER_VER", 211, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Vertical Pointer")
+defineFloat("SAI_POINTER_HOR", 212, {-1, 1}, "Standby Attitude Reference Indicator", "SAI Horisontal Pointer")
+
+defineIndicatorLightInverted("SAI_ATT_WARN_FLAG_L", 209, "Standby Attitude Reference Indicator", "SAI Attitude Warning Flag as Light")
 
 --Externals
 defineIntegerFromGetter("EXT_SPEED_BRAKE", function()
