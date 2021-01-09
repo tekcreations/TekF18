@@ -73,13 +73,14 @@ function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	return ret
 end
 
-function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
-	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
+local function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
+	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
-		if dev0:get_argument_value(arg_number) < 0.5 then
+		if dev0:get_argument_value(arg_number) < 0.64 then
 			alloc:setValue(0)
-		else
-			alloc:setValue(1)
+		elseif dev0:get_argument_value(arg_number) > 0.66 then
+			alloc:setValue(2)			
+		else alloc:setValue(1)
 		end
 	end
 	
@@ -89,7 +90,7 @@ function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_com
 		description = description,
 		control_type = "emergency_parking_brake",
 		inputs = {
-			{ interface = "set_state", max_value = 1, description = "set the switch position -- 0 = emergency, 1 = parking" }
+			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = emergency, 1 = park, 2 = release" }
 		},
 		outputs = {
 			{ ["type"] = "integer",
@@ -97,26 +98,26 @@ function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_com
 			  address = alloc.address,
 			  mask = alloc.mask,
 			  shift_by = alloc.shiftBy,
-			  max_value = 1,
-			  description = "switch position -- 0 = emergency, 1 = parking"
+			  max_value = 2,
+			  description = "switch position -- 0 = emergency, 1 = parking, 2 = release"
 			}
 		}
 	}
-	moduleBeingDefined.inputProcessors[msg] = function(toState)
+		moduleBeingDefined.inputProcessors[msg] = function(toState)
 		local dev = GetDevice(device_id)
-		local fromState = GetDevice(0):get_argument_value(arg_number)
-		if fromState > 0.5 then fromState = 1 end
-		if fromState == 0 and toState == "1" then
-			dev:performClickableAction(park_command, 0) 
-			dev:performClickableAction(park_command, 1) 
-			dev:performClickableAction(park_command, 0) 
-		elseif fromState == 1 and toState == "0" then
-			dev:performClickableAction(emergency_command, 0) 
-			dev:performClickableAction(emergency_command, 1) 
-			dev:performClickableAction(emergency_command, 0) 
+		dev:performClickableAction(emergency_command, 0)
+		dev:performClickableAction(park_command, 0)
+		 if toState == "0" then --Emerg
+			dev:performClickableAction(emergency_command, -1) 			 
+	     elseif toState == "1" then --Park 		 
+			dev:performClickableAction(park_command, 1)			
+		 elseif toState == "2" then --release Park
+		 	dev:performClickableAction(park_command, 1)
+            dev:performClickableAction(park_command, 0)
+            dev:performClickableAction(park_command, 1)			
 		end
 	end
-end
+end	
 
 function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
