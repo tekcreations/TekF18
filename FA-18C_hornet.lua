@@ -2,6 +2,7 @@
 -- Many thanks to Capt Zeen for the pointers on analog outputs and UFC/IFEI export
 -- And of course huge thanks to [FSF]Ian for writing DCS-BIOS in the first place
 -- Added new functions by Capt Zeen to get radios frecuencies and channels
+-- Amended from DCSFLIGHTS by Tek 15-04-20
 
 BIOS.protocol.beginModule("FA-18C_hornet", 0x7400)
 BIOS.protocol.setExportModuleAircrafts({"FA-18C_hornet"})
@@ -73,14 +74,13 @@ function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	return ret
 end
 
-local function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
-	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
+function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
+	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
-		if dev0:get_argument_value(arg_number) < 0.64 then
+		if dev0:get_argument_value(arg_number) < 0.5 then
 			alloc:setValue(0)
-		elseif dev0:get_argument_value(arg_number) > 0.66 then
-			alloc:setValue(2)			
-		else alloc:setValue(1)
+		else
+			alloc:setValue(1)
 		end
 	end
 	
@@ -90,7 +90,7 @@ local function defineEmergencyParkingBrake(msg, device_id, emergency_command, pa
 		description = description,
 		control_type = "emergency_parking_brake",
 		inputs = {
-			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = emergency, 1 = park, 2 = release" }
+			{ interface = "set_state", max_value = 1, description = "set the switch position -- 0 = emergency, 1 = parking" }
 		},
 		outputs = {
 			{ ["type"] = "integer",
@@ -98,26 +98,26 @@ local function defineEmergencyParkingBrake(msg, device_id, emergency_command, pa
 			  address = alloc.address,
 			  mask = alloc.mask,
 			  shift_by = alloc.shiftBy,
-			  max_value = 2,
-			  description = "switch position -- 0 = emergency, 1 = parking, 2 = release"
+			  max_value = 1,
+			  description = "switch position -- 0 = emergency, 1 = parking"
 			}
 		}
 	}
-		moduleBeingDefined.inputProcessors[msg] = function(toState)
+	moduleBeingDefined.inputProcessors[msg] = function(toState)
 		local dev = GetDevice(device_id)
-		dev:performClickableAction(emergency_command, 0)
-		dev:performClickableAction(park_command, 0)
-		 if toState == "0" then --Emerg
-			dev:performClickableAction(emergency_command, -1) 			 
-	     elseif toState == "1" then --Park 		 
-			dev:performClickableAction(park_command, 1)			
-		 elseif toState == "2" then --release Park
-		 	dev:performClickableAction(park_command, 1)
-            dev:performClickableAction(park_command, 0)
-            dev:performClickableAction(park_command, 1)			
+		local fromState = GetDevice(0):get_argument_value(arg_number)
+		if fromState > 0.5 then fromState = 1 end
+		if fromState == 0 and toState == "1" then
+			dev:performClickableAction(park_command, 0) 
+			dev:performClickableAction(park_command, 1) 
+			dev:performClickableAction(park_command, 0) 
+		elseif fromState == 1 and toState == "0" then
+			dev:performClickableAction(emergency_command, 0) 
+			dev:performClickableAction(emergency_command, 1) 
+			dev:performClickableAction(emergency_command, 0) 
 		end
 	end
-end	
+end
 
 function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
@@ -964,7 +964,7 @@ definePushButton("RWR_BIT_BTN", 53, 3005, 266, "RWR Control Indicator", "ALR-67 
 definePotentiometer("RWR_DMR_CTRL", 53, 3006, 263, {0, 1}, "RWR Control Indicator", "ALR-67 DMR Control Knob")
 defineTumb("RWR_DIS_TYPE_SW", 53, 3007, 261, 0.1, {0.0, 0.4}, nil, false, "RWR Control Indicator", "ALR-67 DIS TYPE Switch, N/I/A/U/F")
 definePotentiometer("RWR_RWR_INTESITY", 53, 3008, 216, {0, 1}, "RWR Control Indicator", "RWR Intensity Knob")
-defineIndicatorLight("RWR_LOWER_LT", 276, "RWR Control Indicator", "ALR-67 LOWER Light (green)")
+defineIndicatorLight("RWR_LOWER_LT", 276, "RWR Control Indicator", "ALR-67 POWER Light ON (green)")
 defineIndicatorLight("RWR_LIMIT_LT", 273, "RWR Control Indicator", "ALR-67 LIMIT Light (green)")
 defineIndicatorLight("RWR_DISPLAY_LT", 274, "RWR Control Indicator", "ALR-67 DISPLAY Light (green)")
 defineIndicatorLight("RWR_SPECIAL_EN_LT", 270, "RWR Control Indicator", "ALR-67 SPECIAL ENABLE Light (green)")
@@ -1182,7 +1182,7 @@ defineTumb("KY58_POWER_SELECT", 41, 3004, 447, 0.1, {0.0, 0.2}, nil, false, "KY-
 -- 10. Utility Light
 
 -- 11. Defog Panel
-definePotentiometer("DEFOG_HANDLE", 11, 3005, 451, {0, 1}, "Defog Panel", "Defog Handle")
+definePotentiometer("DEFOG_HANDLE", 11, 3005, 451, {-1, 1}, "Defog Panel", "Defog Handle")
 define3PosTumb("WSHIELD_ANTI_ICE_SW", 11, 3009, 452, "Defog Panel", "Windshield Anti-Ice/Rain Switch, ANTI ICE/OFF/RAIN")
 
 -- 12. Internal Canopy Switch
