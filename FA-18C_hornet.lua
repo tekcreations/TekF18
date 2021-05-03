@@ -2,7 +2,8 @@
 -- Many thanks to Capt Zeen for the pointers on analog outputs and UFC/IFEI export
 -- And of course huge thanks to [FSF]Ian for writing DCS-BIOS in the first place
 -- Added new functions by Capt Zeen to get radios frecuencies and channels
--- Amended from DCSFLIGHTS by Tek 15-04-20
+-- Amended from DCSFLIGHTS by Tek 15-04-21
+-- Added back in Park Brake 03-0-21
 
 BIOS.protocol.beginModule("FA-18C_hornet", 0x7400)
 BIOS.protocol.setExportModuleAircrafts({"FA-18C_hornet"})
@@ -73,14 +74,16 @@ function parse_indication(indicator_id)  -- Thanks to [FSF]Ian code
 	end
 	return ret
 end
-
-function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
-	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
+-------------------------- 
+local function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_command, arg_number, category, description)
+	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
 	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
-		if dev0:get_argument_value(arg_number) < 0.5 then
+		if dev0:get_argument_value(arg_number) < 0.64 then
 			alloc:setValue(0)
-		else
-			alloc:setValue(1)
+
+		elseif dev0:get_argument_value(arg_number) > 0.66 then
+			alloc:setValue(2)			
+		else alloc:setValue(1)
 		end
 	end
 	
@@ -90,7 +93,7 @@ function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_com
 		description = description,
 		control_type = "emergency_parking_brake",
 		inputs = {
-			{ interface = "set_state", max_value = 1, description = "set the switch position -- 0 = emergency, 1 = parking" }
+			{ interface = "set_state", max_value = 2, description = "set the switch position -- 0 = emergency, 1 = park, 2 = release" }
 		},
 		outputs = {
 			{ ["type"] = "integer",
@@ -98,67 +101,30 @@ function defineEmergencyParkingBrake(msg, device_id, emergency_command, park_com
 			  address = alloc.address,
 			  mask = alloc.mask,
 			  shift_by = alloc.shiftBy,
-			  max_value = 1,
-			  description = "switch position -- 0 = emergency, 1 = parking"
+			  max_value = 2,
+			  description = "switch position -- 0 = emergency, 1 = parking, 2 = release"
 			}
 		}
 	}
-	moduleBeingDefined.inputProcessors[msg] = function(toState)
+		moduleBeingDefined.inputProcessors[msg] = function(toState)
 		local dev = GetDevice(device_id)
-		local fromState = GetDevice(0):get_argument_value(arg_number)
-		if fromState > 0.5 then fromState = 1 end
-		if fromState == 0 and toState == "1" then
-			dev:performClickableAction(park_command, 0) 
-			dev:performClickableAction(park_command, 1) 
-			dev:performClickableAction(park_command, 0) 
-		elseif fromState == 1 and toState == "0" then
-			dev:performClickableAction(emergency_command, 0) 
-			dev:performClickableAction(emergency_command, 1) 
-			dev:performClickableAction(emergency_command, 0) 
-		end
-	end
-end
 
-function defineToggleSwitchToggleOnly2(msg, device_id, command, arg_number, category, description)
-	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 1 }
-	moduleBeingDefined.exportHooks[#moduleBeingDefined.exportHooks+1] = function(dev0)
-		if dev0:get_argument_value(arg_number) < 0.5 then
-			alloc:setValue(0)
-		else
-			alloc:setValue(1)
+
+		dev:performClickableAction(emergency_command, 0)
+		dev:performClickableAction(park_command, 0)
+		 if toState == "0" then --Emerg
+			dev:performClickableAction(emergency_command, -1)
+		 elseif toState == "1" then --release Park
+		 	dev:performClickableAction(park_command, 1)
+            dev:performClickableAction(park_command, 0)		
+	     elseif toState == "2" then --Park 		 
+
+			dev:performClickableAction(park_command, 1)				
+
 		end
 	end
-	
-	document {
-		identifier = msg,
-		category = category,
-		description = description,
-		control_type = "toggle_switch",
-		inputs = {
-			{ interface = "set_state", max_value = 1, description = "set the switch position -- 0 = off, 1 = on" }
-		},
-		outputs = {
-			{ ["type"] = "integer",
-			  suffix = "",
-			  address = alloc.address,
-			  mask = alloc.mask,
-			  shift_by = alloc.shiftBy,
-			  max_value = 1,
-			  description = "switch position -- 0 = off, 1 = on"
-			}
-		}
-	}
-	
-	moduleBeingDefined.inputProcessors[msg] = function(toState)
-		local fromState = GetDevice(0):get_argument_value(arg_number)
-		if fromState == 0 and toState == "1" then
-			GetDevice(device_id):performClickableAction(command, 1)
-		end
-		if fromState == 1 and toState == "0" then
-			GetDevice(device_id):performClickableAction(command, 1)
-		end
-	end
-end
+end					
+--------------------------
 
 function defineMissionComputerSwitch(msg, device_id, mc1_off_command, mc2_off_command, arg_number, category, description)
 	local alloc = moduleBeingDefined.memoryMap:allocateInt{ maxValue = 2 }
