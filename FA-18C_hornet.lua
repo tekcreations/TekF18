@@ -1216,6 +1216,7 @@ defineToggleSwitch("HIDE_STICK_TOGGLE", 7, 3013, 575, "Ejection Seat", "Hide Sti
 -- 2. TODO
 definePushButton("LEFT_VIDEO_BIT", 0, 3127, 315, "TODO", "Left Video Sensor BIT Initiate Pushbutton - Push to initiate BIT")
 definePushButton("RIGHT_VIDEO_BIT", 0, 3128, 318, "TODO", "Right Video Sensor BIT Initiate Pushbutton - Push to initiate BIT")
+definePotentiometer("RWR_AUDIO_CTRL", 0, 3130, 262, {0, 1}, "RWR Control Indicator", "ALR-67 AUDIO Control Knob")
 
 --Externals
 defineIntegerFromGetter("EXT_SPEED_BRAKE", function()
