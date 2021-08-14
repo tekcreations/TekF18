@@ -835,8 +835,8 @@ defineString("IFEI_FF_L", function() return txt_FF_L end, 3, "Integrated Fuel/En
 defineString("IFEI_FF_R", function() return txt_FF_R end, 3, "Integrated Fuel/Engine Indicator (IFEI)", "FF_R")
 defineString("IFEI_FUEL_DOWN", function() return txt_FUEL_DOWN end, 6, "Integrated Fuel/Engine Indicator (IFEI)", "FUEL_DOWN")
 defineString("IFEI_FUEL_UP", function() return txt_FUEL_UP end, 6, "Integrated Fuel/Engine Indicator (IFEI)", "FUEL_UP")
-defineString("IFEI_OIL_PRESS_L", function() return txt_OilPress_L end, 2, "Integrated Fuel/Engine Indicator (IFEI)", "OilPress_L")
-defineString("IFEI_OIL_PRESS_R", function() return txt_OilPress_R end, 2, "Integrated Fuel/Engine Indicator (IFEI)", "OilPress_R")
+defineString("IFEI_OIL_PRESS_L", function() return txt_OilPress_L end, 3, "Integrated Fuel/Engine Indicator (IFEI)", "OilPress_L")
+defineString("IFEI_OIL_PRESS_R", function() return txt_OilPress_R end, 3, "Integrated Fuel/Engine Indicator (IFEI)", "OilPress_R")
 defineString("IFEI_RPM_L", function() return txt_RPM_L end, 2, "Integrated Fuel/Engine Indicator (IFEI)", "RPM_L")
 defineString("IFEI_RPM_R", function() return txt_RPM_R end, 2, "Integrated Fuel/Engine Indicator (IFEI)", "RPM_R")
 defineString("IFEI_TEMP_L", function() return txt_TEMP_L end, 3, "Integrated Fuel/Engine Indicator (IFEI)", "TEMP_L")
@@ -1243,6 +1243,10 @@ end, 65535, "External Aircraft Model", "Right Nozzle Position")
 defineIntegerFromGetter("EXT_NOZZLE_POS_L", function()
 	return math.floor(LoGetAircraftDrawArgumentValue(90)*65535)
 end, 65535, "External Aircraft Model", "Left Nozzle Position")
+
+defineString("IFEI_T", function() return txt_T end, 6, "Integrated Fuel/Engine Indicator (IFEI)", "T")
+defineString("IFEI_L_TEXTURE", function() return LTexture end, 1, "Integrated Fuel/Engine Indicator (IFEI)", "Left Texture Visible: 1 = yes, 0 = no")
+defineString("IFEI_R_TEXTURE", function() return RTexture end, 1, "Integrated Fuel/Engine Indicator (IFEI)", "Right Texture Visible: 1 = yes, 0 = no")
 
 
 BIOS.protocol.endModule()
