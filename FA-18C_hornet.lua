@@ -1244,9 +1244,4 @@ defineIntegerFromGetter("EXT_NOZZLE_POS_L", function()
 	return math.floor(LoGetAircraftDrawArgumentValue(90)*65535)
 end, 65535, "External Aircraft Model", "Left Nozzle Position")
 
-defineString("IFEI_T", function() return txt_T end, 6, "Integrated Fuel/Engine Indicator (IFEI)", "T")
-defineString("IFEI_L_TEXTURE", function() return LTexture end, 1, "Integrated Fuel/Engine Indicator (IFEI)", "Left Texture Visible: 1 = yes, 0 = no")
-defineString("IFEI_R_TEXTURE", function() return RTexture end, 1, "Integrated Fuel/Engine Indicator (IFEI)", "Right Texture Visible: 1 = yes, 0 = no")
-
-
 BIOS.protocol.endModule()
